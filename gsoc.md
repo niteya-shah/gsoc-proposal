@@ -4,7 +4,7 @@ Niteya Shah, NumFocus 2020
 ## Abstract
 The current implementation of the random module of CuPy is based on RandomState API, which follows the implementation of NumPy < 1.17. This implementation like NumPy relies on a global state seed and all random calls must use this seed. 
 
-The new Generator API of NumPy introduced in 1.17, changes all of that. The new API allows the user to create independent PRNGs, with exclusive states. This makes it much simpler to run in parallel. In addition to this, this methodology is much more in tune with the cuRAND host API, used by CuPy in its current implementation of the random module. This Proposal outlines the work needed to add the Generator API to CuPy.
+The new Generator API of NumPy introduced in 1.17 allows the user to create independent PRNGs, with exclusive states. This makes it much simpler to run in parallel. In addition to this, this methodology is much more in tune with the cuRAND host API, used by CuPy in its current implementation of the random module. This Proposal outlines the work needed to add the Generator API to CuPy.
 
 
 ## Technical Details
@@ -16,7 +16,7 @@ This work hopes to improve the compatibility of CuPy with NumPy to be better use
 
 The cuRAND library provides generators which are called to produce random numbers from different distributions which are then transformed to the required distribution. With the new Generator API, the user will have control over most features of the cuRAND generator over a thin abstraction layer.
 
-Additionally the Generator API now supports the argument dtype, which was support by CuPy in its current implementation as well as the out argument which can be used to fill arrays.
+Additionally the Generator API now supports the argument dtype, which was support by CuPy in its current implementation as well as the out argument which can be used to fill pre-existing arrays.
 
 The RandomState API is much slower to run in parallel due to constant locking of the state, it affects reproducibility as well due to excessive bookkeeping of changes in state when run in parallel. In comparison, the Generator API can create multiple PRNGs, which will all be able to run concurrently.
 
@@ -126,7 +126,7 @@ The Project can be split into the following parts
 
 #### **Community Bonding Period**
 #### May 4th - 31st  May
-1. Establish communication channel with my Mentor
+1. Establish a communication channel with my Mentor
 2. Setup and configure my environment, build system and tools.
 3. Discuss my Project in detail and discuss possible improvements and changes
 4. Research the possibility of implementing additional BitGenerators to make the module more NumPy compatible.
@@ -188,13 +188,12 @@ The Project can be split into the following parts
 1. Final review for work done, make the necessary changes and get the PR merged into master.
 2. Prepare the final report.
 
-
-#### Future work
+#### Future work \newline
 All the points mentioned here are optional and may be done if I'm ahead of schedule, and if time doesn't permit it then will be done after the completion of the program.
+
 1. Add support for other BitGenerators which NumPy supports but cuRAND doesn't.
 2. Add jump support for BitGenerator that cuRAND won't support. 
 
-<div style="page-break-after: always;"></div>
 \pagebreak
 
 ## Development Experience
@@ -222,7 +221,7 @@ I have actively led [TAG](https://www.facebook.com/tagvitu/), a technology and g
 ## Why this project?
 I have always been interested in high performance computing and its applications, and have extensively used NumPy for my projects. However even with the performance benefits of NumPy over Python, many improvements were still left on the table, namely support from the GPU. CuPy is an excellent library which allows users to achieve fast GPU performance without changing a lot of code. 
 
-I have worked a lot on simulation projects and each of them have used NumPy’s random module to generate the properties of the system. This project will not only improve the compatibility of NumPy and CuPy but also make it simpler to simultaneously generate multiple random systems, as the current implementation is based on a global state which is not suitable for multiple independent simulations. 
+I have worked a lot on simulation projects and each of them have used NumPy’s random module to generate the properties of the system. This project will not only improve the compatibility of NumPy and CuPy but also make it simpler to simultaneously generate multiple random systems, as the current implementation is not as suitable for the task.
 
 All of these important features make this project a great addition to the CuPy codebase, and will be of great use to anyone who uses the random module, both in terms of usability and maintainability. 
 
