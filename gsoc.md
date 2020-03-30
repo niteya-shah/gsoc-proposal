@@ -12,8 +12,14 @@ The new Generator API of NumPy introduced in 1.17, changes all of that. The new 
 ### Proposed Solution
 GPU-accelerated computing is becoming increasingly popular as growth in the processing power of CPU cannot keep up with rising demands. A large user of GPUs is in scientific computing, where a lot of numerical processing is required. To simulate real-world scenarios, randomized generation of values is necessary. The random module from CuPy provides an excellent base class with low level support for most use cases. 
 
-This work hopes to improve the compatibility of CuPy with NumPy to be better used as a drop-in replacement to instantly achieve a massive speed-up with little to no code changes. 
-The RandomState API is much slower to run in parallel due to constant locking of the state, it affects reproducibility as well due to excessive bookkeeping of changes in state when run in parallel. In comparison, the Generator API will create multiple PRNGs, which will all be able to run concurrently. In addition to this, the implementation can be designed to be a simple abstraction over the current cuRAND system and let the user have much better control with base API. 
+This work hopes to improve the compatibility of CuPy with NumPy to be better used as a drop-in replacement to instantly achieve a massive speed-up with little to no code changes.
+
+The cuRAND library provides generators which are called to produce random numbers from different distributions which are then transformed to the required distribution. With the new Generator API, the user will have control over most features of the cuRAND generator over a thin abstraction layer.
+
+Additionally the Generator API now supports the argument dtype, which was support by CuPy in its current implementation as well as the out argument which can be used to fill arrays.
+
+The RandomState API is much slower to run in parallel due to constant locking of the state, it affects reproducibility as well due to excessive bookkeeping of changes in state when run in parallel. In comparison, the Generator API can create multiple PRNGs, which will all be able to run concurrently.
+
 
 ### Usage
 The Generator API requires a generator object to be created. 
@@ -46,53 +52,60 @@ for i in range(10):
 ```
 
 This work will not affect the RandomState API and that will work as before.
-```
+```python
 from cupy.random import randn
 print(randn(10))
 ```
+\pagebreak
 
 ### Design
 The Design of the API is just as important as the implementation and while NumPy has thought out most of the issues, some differences will exist from NumPy. 
 The Basic UML design of the API is as follows
 
+### SeedSequence classes 
 
-#### SeedSequence classes
-![generator](images/seedsequence.png)
+![Figure 1: SeedSequence API](images/seedsequence.png)
+\ 
 
-				                    Figure 1. SeedSequence API
+
 The ISeedSequence API is a set of abstract classes, with the SeedSequence class as the implementation. SeedSequence is the holder of the state, and is responsible for transforming a number to a high quality seed. 
 Just like the NumPy API, the CuPy API for SeedSequence will also be extendable and any object that is a derived member of ISeedSequence.
 
+\pagebreak
 
-#### BitGenerator classes
- ![generator](images/bitgenerator.png)
+### BitGenerator classes
+ ![Figure 2: Bitgenerator API](images/bitgenerator.png)
+ \ 
 
-				                    Figure 2. BitGenerator API
+
 The BitGenerator set of classes are responsible for generating random byte streams from the instantiated states. These byte streams are then used by the Generator class for producing the random values.
 The Base BitGenerator class is meant to be overridden and hence will not be instantiable. The derived classes all represent BitGenerators which are available in cuRAND, which are
+
 * MT19937
 * XORWOW
 * MRG32K3A
 * PHILOX4
 * MTGP32
 
-Internally all of these classes will hold cuRAND Generators and will be used to generate the byte streams.
+Internally all of these classes will hold cuRAND Generators and will be used to generate the byte streams. BitGenerators 
 
 The BitGenerator can also jump states so that it can be run in parallel or be reused. This functionality is available for some of the Generators and hence only these BitGenerators will be able to exhibit this property. A point to note here is that unlike NumPy, where the offset provided is relative, cuRAND offset values always have to be absolute, leading to a slight change in API where an additional member holding the current offset is required to prevent incorrect jumps.
 
+### Generator class
+![Figure 3: Generator API](images/generator.png)
+\ 
 
-#### Generator class
-![generator](images/generator.png)
 
-					                    Figure 3. Generator API
 The Generator class is the main class and will be responsible for providing all the necessary functions that are available in the random module. Internally it holds the BitGenerator and will use the state to generate the required random values. 
 A Generator object will only accept cuRAND acceptable Generator BitGenerators.
 The function default_rng is a simple way of creating a Generator with default values with an optional seed(The seed here can be a number to be passed to SeedSequence, a BitGenerator from a which Generator has to be created or a Generator itself which will be returned as is). 
+\pagebreak
 
 ## Schedule of Deliverables
 
 ### Deliverables
 The Project can be split into the following parts
+
 1. Implement the SeedSequence classes.
 2. Implement bitgen_t struct, the base BitGenerator class and the respective BitGenerators 
     * MT19937
@@ -137,7 +150,7 @@ The Project can be split into the following parts
 1. Get a review of current work done and make the necessary changes.
 2. Prepare a report of work done.
 
-### **Phase 2**
+#### **Phase 2**
 #### 29th June to 10th July
 1. Refactor current code to accommodate the Generator API.
 2. Implement the Generator API.
@@ -154,6 +167,8 @@ The Project can be split into the following parts
 #### 25th July to 30th July
 1. Get a review of current work done and make the necessary changes.
 2. Submit Report.
+
+\pagebreak
 
 #### **Final Phase**
 #### 31th July to 4th August
@@ -179,6 +194,9 @@ All the points mentioned here are optional and may be done if I'm ahead of sched
 1. Add support for other BitGenerators which NumPy supports but cuRAND doesn't.
 2. Add jump support for BitGenerator that cuRAND won't support. 
 
+<div style="page-break-after: always;"></div>
+\pagebreak
+
 ## Development Experience
 
 ### Contributions to Open-Source
@@ -192,6 +210,7 @@ All the points mentioned here are optional and may be done if I'm ahead of sched
 
 ### Contributions to CuPy
 As of writing I have submitted 3 pull requests to CuPy, and have become extremely familiar with the coding style of CuPy and its codebase.
+
 1. Implement gcd and lcm ([#3190](https://github.com/cupy/cupy/pull/3190))
 2. Add cupy.select ([#3138](https://github.com/cupy/cupy/pull/3138))
 3. Feature - implementation of np.require in CuPy ([#3083](https://github.com/cupy/cupy/pull/3083))
@@ -201,7 +220,9 @@ As of writing I have submitted 3 pull requests to CuPy, and have become extremel
 I have actively led [TAG](https://www.facebook.com/tagvitu/), a technology and game development club as a member and then as its vice-president during my time in college, where the club massive events which involved over 800 people and was coordinated by me. 
 
 ## Why this project?
-I have always been interested in high performance computing and its applications, and have extensively used NumPy for my projects. However even with the performance benefits of NumPy over Python, many improvements were still left on the table, namely support from the GPU. CuPy is an excellent library which allows users to achieve fast GPU performance without changing a lot of code. I have worked a lot on simulation projects and each of them have used NumPy’s random module to generate the properties of the system. This project will not only improve the compatibility of NumPy and CuPy but also make it simpler to simultaneously generate multiple random systems, as the current implementation is based on a global state which is not suitable for multiple independent simulations. 
+I have always been interested in high performance computing and its applications, and have extensively used NumPy for my projects. However even with the performance benefits of NumPy over Python, many improvements were still left on the table, namely support from the GPU. CuPy is an excellent library which allows users to achieve fast GPU performance without changing a lot of code. 
+
+I have worked a lot on simulation projects and each of them have used NumPy’s random module to generate the properties of the system. This project will not only improve the compatibility of NumPy and CuPy but also make it simpler to simultaneously generate multiple random systems, as the current implementation is based on a global state which is not suitable for multiple independent simulations. 
 
 All of these important features make this project a great addition to the CuPy codebase, and will be of great use to anyone who uses the random module, both in terms of usability and maintainability. 
 
@@ -219,8 +240,7 @@ All of these important features make this project a great addition to the CuPy c
 |Email| niteya.56@gmail.com|
 |Github profile| https://github.com/niteya-shah|
 |Postal Address| 402 Shyam Sameep, 35 Urmi society, Alkpauri, Vadodara, Gujarat, 390007, India|
-|Interests and hobbies| swimming, listening to music, watching TV shows and tinkering around with my computer.|
-
+|Interests and hobbies| Swimming, listening to music and playing Games.
 
 ### Workload and Summer plans
 I plan to devote 8 hrs daily (or more if required) to work on this project. I have no exams and will have a Project review that is most probably going to happen via a video call. Hence I will be able to dedicate my full time and effort on this project, and hence will most definitely be able to finish this Project.
